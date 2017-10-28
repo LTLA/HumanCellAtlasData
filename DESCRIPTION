@@ -1,0 +1,14 @@
+Package: HumanCellAtlasData
+Title: Data from the Human Cell Atlas Project
+Version: 0.99.0
+Author: Aaron Lun
+Maintainer: Aaron Lun <alun@wehi.edu.au>
+Description: Provides access to single-cell genomics data generated 
+    by the Human Cell Atlas project.
+License: GPL-3
+Depends: SingleCellExperiment, HDF5Array
+Imports: AnnotationHub (>= 2.9.22), ExperimentHub
+Suggests: knitr
+VignetteBuilder: knitr
+biocViews: SequencingData, RNASeqData, ExpressionData, SingleCell
+NeedsCompilation: no
