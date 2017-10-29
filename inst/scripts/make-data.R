@@ -53,10 +53,57 @@ tsv2hdf5 <- function(path, output.file, output.name) {
 # colnames(blah) <- paste0("Cell", 1:ncol(blah))
 # rownames(blah) <- paste0("Gene", 1:nrow(blah))
 # colnames(blah) <- paste0("Cell", 1:ncol(blah))
-# write.table(blah, file="whee.tsv", sep="\t", col.names=NA, quote=FALSE)
+# output <- gzfile("whee.tsv.gz", open="wb")
+# write.table(blah, file=output, sep="\t", col.names=NA, quote=FALSE)
+# close(output)
 #
 # # Using the above function to store it in a HDF5 file.
-# blah <- tsv2hdf5("whee.tsv.gz", "whee.h5", "counts")
+# system.time(blah <- tsv2hdf5("whee.tsv.gz", "whee.h5", "counts"))
 # library(HDF5Array)
 # h5mat <- HDF5Array("whee.h5", "counts")
 # dimnames(h5mat) <- blah
+
+library(HDF5Array)
+library(SingleCellExperiment)
+loom2sce <- function(path) {
+    # Extracting the count matrix.
+    mat <- HDF5Array(path, "matrix")
+    mat <- t(mat)
+
+    # Extracting the row and column metadata.
+    col.attrs <- h5read(path, "col_attrs")
+    if (length(col.attrs)) { 
+        col.df <- data.frame(col.attrs)
+    } else {
+        col.df <- DataFrame(matrix(0, nrow(mat), 0))
+    }
+
+    row.attrs <- h5read(path, "row_attrs")
+    if (length(row.attrs)) { 
+        row.df <- data.frame(row.attrs)
+    } else {
+        row.df <- NULL
+    }
+
+    # Extracting layers (if there are any)
+    optional <- h5ls(path)
+    is.layer <- optional$group=="/layer"
+    if (any(is.layer)) {
+        layer.names <- optional$name[is.layer,]
+        other.layers <- vector("list", length(layer.names))
+        names(other.layers) <- layer.names
+
+        for (layer in layer.names) {
+            current <- HDF5Array(path, file.path("/layer", layer))
+            other.layers[[layer]] <- t(current)
+        }
+    } else {
+        other.layers <- list()
+    }
+    
+    # Returning SingleCellExperiment object.
+    sce <- SingleCellExperiment(c(matrix=mat, other.layers), rowData=row.df, colData=col.df)
+    return(sce)
+}
+
+# sce <- loom2sce("cortex.loom")
